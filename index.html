@@ -15,7 +15,7 @@
             <p>Connectez-vous à votre service</p>
             <select id="connType">
                 <option value="xtream">API Xtream Codes</option>
-                <option value="m3u">Lien M3U</option>
+                <option value="m3u">Lien ou Fichier M3U</option>
             </select>
             
             <div id="xtream-fields">
@@ -26,6 +26,8 @@
 
             <div id="m3u-fields" class="hidden">
                 <input type="url" id="m3uUrl" placeholder="URL de votre fichier M3U">
+                <p style="text-align: center; margin: 10px 0;">OU</p>
+                <input type="file" id="m3uFile" accept=".m3u,.m3u8" style="padding: 5px; border: none;">
             </div>
 
             <button id="connect-btn">Se Connecter</button>
@@ -35,6 +37,12 @@
 
     <div id="player-view" class="view">
         <aside class="sidebar">
+            <div class="content-selector">
+                <div class="selector-item active" data-category="live">📺 TV Live</div>
+                <div class="selector-item" data-category="vod">🎬 Films</div>
+                <div class="selector-item" data-category="series">🎞️ Séries</div>
+            </div>
+
             <div class="sidebar-header">
                 <h2>Groupes</h2>
             </div>
@@ -44,17 +52,12 @@
                 <button id="settings-btn">⚙️ Paramètres</button>
                 <button id="logout-btn">Déconnexion</button>
             </div>
-            <div class="content-selector">
-    <div class="selector-item active" data-category="live">📺 TV Live</div>
-    <div class="selector-item" data-category="vod">🎬 Films</div>
-    <div class="selector-item" data-category="series">🎞️ Séries</div>
-</div>   
         </aside>
         
         <main class="main-content">
             <div class="channel-list-container">
-                 <h2>Chaînes</h2>
-                 <input type="text" id="search-bar" placeholder="Rechercher une chaîne...">
+                 <h2 id="list-title">Chaînes</h2>
+                 <input type="text" id="search-bar" placeholder="Rechercher...">
                  <div id="channel-list">
                     </div>
             </div>
@@ -78,12 +81,14 @@
             <label for="latency-config">Latence du flux (en secondes)</label>
             <input type="number" id="latency-config" min="0" step="0.5" value="1">
             <hr>
+            <label for="timezone-config">Fuseau horaire (pour l'EPG)</label>
+            <select id="timezone-config"></select>
+            <hr>
             <h3>Code Parental</h3>
             <input type="password" id="parental-code" placeholder="Définir un code PIN (4 chiffres)">
             <button id="save-settings-btn">Enregistrer les paramètres</button>
         </div>
     </div>
-
 
     <script src="app.js"></script>
 </body>
