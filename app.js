@@ -132,14 +132,20 @@ document.addEventListener('DOMContentLoaded', () => {
     async function login(config) {
         state.config = config;
         if (config.type === 'xtream') {
-            const [live, vod, series] = await Promise.all([
+            const results = await Promise.allSettled([
                 fetchXtreamData(config, 'get_live_streams'),
                 fetchXtreamData(config, 'get_vod_streams'),
                 fetchXtreamData(config, 'get_series'),
             ]);
-            state.live_streams = live;
-            state.vod_streams = vod;
-            state.series_streams = series;
+            
+            state.live_streams = results[0].status === 'fulfilled' ? results[0].value : [];
+            state.vod_streams = results[1].status === 'fulfilled' ? results[1].value : [];
+            state.series_streams = results[2].status === 'fulfilled' ? results[2].value : [];
+
+            if(results[0].status === 'rejected') console.error("Échec du chargement de la TV Live:", results[0].reason);
+            if(results[1].status === 'rejected') console.error("Échec du chargement des Films:", results[1].reason);
+            if(results[2].status === 'rejected') console.error("Échec du chargement des Séries:", results[2].reason);
+
         } else if (config.type === 'm3u') {
             state.live_streams = await fetchM3uChannels(config.m3u);
             state.vod_streams = [];
@@ -147,16 +153,31 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         switchCategory('live');
     }
-
+    
+    // AMÉLIORATION DE LA FONCTION fetchXtreamData
     async function fetchXtreamData(config, action) {
+        const apiUrl = `${config.server}/player_api.php?username=${config.username}&password=${config.password}&action=${action}`;
+        const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
+        
+        if (!response.ok) {
+            throw new Error(`Erreur réseau via proxy pour ${action}: Statut ${response.status}`);
+        }
+        
+        const textData = await response.text();
+        if(!textData || textData.includes('DOCTYPE html')) {
+             throw new Error(`La réponse pour ${action} est une page HTML, pas du JSON. Le proxy est peut-être bloqué.`);
+        }
+
         try {
-            const apiUrl = `${config.server}/player_api.php?username=${config.username}&password=${config.password}&action=${action}`;
-            const proxyUrl = 'https://api.allorigins.win/raw?url=';
-            const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
-            if (!response.ok) throw new Error(`Erreur API pour ${action}: ${response.status}`);
-            
-            const data = await response.json();
-            if (!Array.isArray(data)) return [];
+            const data = JSON.parse(textData);
+            if (!Array.isArray(data)) {
+                 // Si la réponse est un objet, vérifier si c'est un objet d'authentification valide mais vide
+                if (data && data.user_info && data.user_info.auth === 0) {
+                    throw new Error(`Échec de l'authentification pour ${action}: vérifiez les identifiants.`);
+                }
+                return []; // La réponse est valide mais ne contient pas de liste
+            }
 
             const streamTypeMap = { 'get_live_streams': 'live', 'get_vod_streams': 'movie', 'get_series': 'series'};
             const type = streamTypeMap[action];
@@ -168,9 +189,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 url: `${config.server}/${type}/${config.username}/${config.password}/${item.stream_id}.${item.container_extension || 'ts'}`,
                 id: item.stream_id,
             }));
-        } catch (error) {
-            console.error(`Impossible de charger les données pour ${action}:`, error);
-            return [];
+        } catch (e) {
+            throw new Error(`Erreur de parsing JSON pour ${action}: ${e.message}`);
         }
     }
     
@@ -241,20 +261,26 @@ document.addEventListener('DOMContentLoaded', () => {
             item.name.toLowerCase().includes(filterText)
         );
         channelList.innerHTML = '';
-        filteredItems.forEach(item => {
-            const itemEl = document.createElement('div');
-            itemEl.className = 'channel-item';
-            itemEl.innerHTML = `
-                <img src="${item.logo}" alt="" class="channel-logo" onerror="this.src='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='">
-                <span class="channel-name">${item.name}</span>
-            `;
-            itemEl.addEventListener('click', () => {
-                document.querySelector('.channel-item.active')?.classList.remove('active');
-                itemEl.classList.add('active');
-                playChannel(item.url);
+        if (filteredItems.length === 0 && currentItems.length > 0) {
+            channelList.innerHTML = `<div class="channel-item">Aucun résultat pour "${searchBar.value}"</div>`;
+        } else if (currentItems.length === 0) {
+             channelList.innerHTML = `<div class="channel-item">Aucun contenu trouvé pour cette catégorie.</div>`;
+        } else {
+            filteredItems.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'channel-item';
+                itemEl.innerHTML = `
+                    <img src="${item.logo}" alt="" class="channel-logo" onerror="this.src='data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs='">
+                    <span class="channel-name">${item.name}</span>
+                `;
+                itemEl.addEventListener('click', () => {
+                    document.querySelector('.channel-item.active')?.classList.remove('active');
+                    itemEl.classList.add('active');
+                    playChannel(item.url);
+                });
+                channelList.appendChild(itemEl);
             });
-            channelList.appendChild(itemEl);
-        });
+        }
     }
 
     searchBar.addEventListener('input', displayItems);
