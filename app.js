@@ -1,5 +1,3 @@
-// app.js
-
 document.addEventListener('DOMContentLoaded', () => {
     // --- VARIABLES GLOBALES ET ÉTAT DE L'APPLICATION ---
     const state = {
