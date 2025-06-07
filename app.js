@@ -1,3 +1,42 @@
+// --- Débogueur à l'écran ---
+(function () {
+    const debugLog = document.getElementById('debug-log');
+    
+    // Si la div de debug n'existe pas, on ne fait rien.
+    if (!debugLog) return;
+
+    // On sauvegarde les fonctions originales de la console
+    const originalLog = console.log;
+    const originalError = console.error;
+    const originalWarn = console.warn;
+
+    // Fonction pour ajouter un message à l'écran
+    function logToScreen(message, color = '#00ff00') {
+        const p = document.createElement('p');
+        p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        p.style.color = color;
+        debugLog.appendChild(p);
+        // Fait défiler automatiquement vers le bas
+        debugLog.scrollTop = debugLog.scrollHeight;
+    }
+
+    // On remplace les fonctions de la console
+    console.log = function() {
+        logToScreen(Array.from(arguments).join(' '));
+        originalLog.apply(console, arguments);
+    };
+    console.error = function() {
+        logToScreen(`ERREUR: ${Array.from(arguments).join(' ')}`, '#ff4d4d');
+        originalError.apply(console, arguments);
+    };
+    console.warn = function() {
+        logToScreen(`AVERTISSEMENT: ${Array.from(arguments).join(' ')}`, '#ffff4d');
+        originalWarn.apply(console, arguments);
+    };
+})();
+// --- Fin du débogueur à l'écran ---
+
+
 document.addEventListener('DOMContentLoaded', () => {
     // --- ÉTAT DE L'APPLICATION ---
     const state = {
@@ -132,6 +171,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function login(config) {
         state.config = config;
         if (config.type === 'xtream') {
+            console.log("Tentative de chargement des données Xtream...");
             const results = await Promise.allSettled([
                 fetchXtreamData(config, 'get_live_streams'),
                 fetchXtreamData(config, 'get_vod_streams'),
@@ -142,9 +182,10 @@ document.addEventListener('DOMContentLoaded', () => {
             state.vod_streams = results[1].status === 'fulfilled' ? results[1].value : [];
             state.series_streams = results[2].status === 'fulfilled' ? results[2].value : [];
 
-            if(results[0].status === 'rejected') console.error("Échec du chargement de la TV Live:", results[0].reason);
-            if(results[1].status === 'rejected') console.error("Échec du chargement des Films:", results[1].reason);
-            if(results[2].status === 'rejected') console.error("Échec du chargement des Séries:", results[2].reason);
+            if(results[0].status === 'rejected') console.error("Échec du chargement de la TV Live:", results[0].reason.message);
+            if(results[1].status === 'rejected') console.error("Échec du chargement des Films:", results[1].reason.message);
+            if(results[2].status === 'rejected') console.error("Échec du chargement des Séries:", results[2].reason.message);
+            console.log(`Chargement terminé. TV: ${state.live_streams.length}, Films: ${state.vod_streams.length}, Séries: ${state.series_streams.length}`);
 
         } else if (config.type === 'm3u') {
             state.live_streams = await fetchM3uChannels(config.m3u);
@@ -154,10 +195,10 @@ document.addEventListener('DOMContentLoaded', () => {
         switchCategory('live');
     }
     
-    // AMÉLIORATION DE LA FONCTION fetchXtreamData
     async function fetchXtreamData(config, action) {
         const apiUrl = `${config.server}/player_api.php?username=${config.username}&password=${config.password}&action=${action}`;
         const proxyUrl = 'https://api.allorigins.win/raw?url=';
+        console.log(`Chargement de : ${action}`);
         const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
         
         if (!response.ok) {
@@ -172,12 +213,13 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const data = JSON.parse(textData);
             if (!Array.isArray(data)) {
-                 // Si la réponse est un objet, vérifier si c'est un objet d'authentification valide mais vide
                 if (data && data.user_info && data.user_info.auth === 0) {
                     throw new Error(`Échec de l'authentification pour ${action}: vérifiez les identifiants.`);
                 }
-                return []; // La réponse est valide mais ne contient pas de liste
+                console.warn(`La réponse pour ${action} n'est pas un tableau, mais un objet.`, data);
+                return [];
             }
+            console.log(`${data.length} éléments trouvés pour ${action}.`);
 
             const streamTypeMap = { 'get_live_streams': 'live', 'get_vod_streams': 'movie', 'get_series': 'series'};
             const type = streamTypeMap[action];
@@ -327,6 +369,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INITIALISATION DE L'APPLICATION ---
     function init() {
+        console.log("Initialisation de l'application...");
         // Peupler le select du fuseau horaire
         const timezoneSelect = document.getElementById('timezone-config');
         try {
