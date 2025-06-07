@@ -18,11 +18,8 @@ body {
     overflow: hidden;
 }
 
-/* LA RÈGLE LA PLUS IMPORTANTE POUR LA MISE EN PAGE */
 .view { display: none; }
 .view.active { display: flex; }
-/* ------------------------------------------- */
-
 
 /* --- Écran de Connexion --- */
 #login-view {
@@ -138,6 +135,7 @@ button:hover {
     margin-right: 15px;
     border-radius: 4px;
     background-color: var(--tertiary-bg);
+    object-fit: contain;
 }
 .channel-name { flex-grow: 1; }
 
@@ -186,6 +184,7 @@ button:hover {
     font-weight: bold;
     cursor: pointer;
 }
+
 /* --- Style pour le sélecteur de contenu --- */
 .content-selector {
     display: flex;
@@ -193,6 +192,7 @@ button:hover {
     padding: 10px;
     gap: 5px;
     background: var(--primary-bg);
+    border-bottom: 1px solid var(--border-color);
 }
 .selector-item {
     padding: 12px;
