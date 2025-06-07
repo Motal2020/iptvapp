@@ -1,0 +1,74 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Lecteur IPTV Avancé</title>
+  <style>
+    body { background: #111; color: #fff; font-family: Arial; margin: 0; padding: 20px; }
+    input, button, select { margin: 5px 0; padding: 8px; width: 100%; max-width: 400px; }
+    .group { margin-top: 20px; }
+    .channel { cursor: pointer; padding: 6px; border-bottom: 1px solid #444; }
+    .channel:hover { background-color: #333; }
+    video { width: 100%; max-width: 800px; height: 450px; background: #000; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+<h2>Lecteur IPTV Avancé (Live + Films + Séries)</h2>
+<input type="text" id="m3uUrl" placeholder="Lien M3U/M3U8" />
+<button onclick="loadPlaylist()">Charger la playlist</button>
+
+<div id="lists"></div>
+<video id="player" controls autoplay></video>
+
+<script>
+async function loadPlaylist() {
+  const url = document.getElementById('m3uUrl').value;
+  const res = await fetch(url);
+  const text = await res.text();
+  const lines = text.split(/\r?\n/);
+  const groups = { Live: [], Films: [], Series: [], Autres: [] };
+  let currentName = "", currentGroup = "Autres", currentURL = "";
+
+  for (let i = 0; i < lines.length; i++) {
+    if (lines[i].startsWith("#EXTINF")) {
+      currentName = lines[i].split(",").pop().trim();
+      const groupMatch = lines[i].match(/group-title="(.*?)"/);
+      if (groupMatch) currentGroup = groupMatch[1].toLowerCase();
+    } else if (lines[i].startsWith("http")) {
+      currentURL = lines[i];
+      if (currentGroup.includes("live")) groups.Live.push({ name: currentName, url: currentURL });
+      else if (currentGroup.includes("film")) groups.Films.push({ name: currentName, url: currentURL });
+      else if (currentGroup.includes("serie")) groups.Series.push({ name: currentName, url: currentURL });
+      else groups.Autres.push({ name: currentName, url: currentURL });
+    }
+  }
+
+  displayGroups(groups);
+}
+
+function displayGroups(groups) {
+  const lists = document.getElementById('lists');
+  lists.innerHTML = '';
+  for (const key in groups) {
+    if (groups[key].length > 0) {
+      const div = document.createElement('div');
+      div.className = 'group';
+      div.innerHTML = `<h3>${key}</h3>` + groups[key].map(c =>
+        `<div class="channel" onclick="play('${c.url}')">${c.name}</div>`
+      ).join('');
+      lists.appendChild(div);
+    }
+  }
+}
+
+function play(url) {
+  const video = document.getElementById('player');
+  video.src = url;
+  video.play();
+}
+</script>
+
+</body>
+</html>
