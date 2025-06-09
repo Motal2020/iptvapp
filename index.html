@@ -8,6 +8,14 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
+
+    <div id="loading-overlay" class="hidden">
+        <div class="loading-box">
+            <div class="spinner"></div>
+            <p id="loading-message">Connexion en cours...</p>
+        </div>
+    </div>
+
     <div id="login-view" class="view active">
         <div class="login-box">
             <h1>NextGen IPTV Player</h1>
@@ -30,6 +38,7 @@
             <p id="login-error" class="error-message"></p>
         </div>
     </div>
+    
     <div id="player-view" class="view">
         <aside class="sidebar">
             <div class="content-selector">
@@ -63,6 +72,7 @@
             </div>
         </main>
     </div>
+    
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
@@ -78,7 +88,7 @@
             <button id="save-settings-btn">Enregistrer les paramètres</button>
         </div>
     </div>
-    <div id="debug-log"></div>
+    
     <script src="app.js"></script>
 </body>
 </html>
