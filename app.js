@@ -92,6 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
             showView('player-view');
         } catch (error) {
             loginError.textContent = `Erreur de connexion : ${error.message}`;
+            console.error("Erreur détaillée de connexion:", error);
             showView('login-view');
         } finally {
             connectBtn.textContent = 'Se Connecter';
@@ -138,12 +139,12 @@ document.addEventListener('DOMContentLoaded', () => {
             state.live_streams = await fetchM3uChannels(config.m3u);
             state.vod_streams = []; state.series_streams = [];
         }
+        // Important: il faut appeler switchCategory après le login
         switchCategory('live');
     }
     
     async function fetchXtreamData(config, action) {
         const apiUrl = `${config.server}/player_api.php?username=${config.username}&password=${config.password}&action=${action}`;
-        // ON CHANGE DE PROXY ICI !
         const proxyUrl = 'https://corsproxy.io/?';
         console.log(`Chargement de : ${action} via ${proxyUrl}`);
         const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
@@ -167,7 +168,10 @@ document.addEventListener('DOMContentLoaded', () => {
             const streamTypeMap = { 'get_live_streams': 'live', 'get_vod_streams': 'movie', 'get_series': 'series'};
             const type = streamTypeMap[action];
             return data.map(item => ({
-                name: item.name, logo: item.stream_icon || item.icon || '', group: item.category_name || 'Non classé',
+                // CORRECTION N°1 : On s'assure que le nom existe toujours
+                name: item.name || 'Sans Nom', 
+                logo: item.stream_icon || item.icon || '', 
+                group: item.category_name || 'Non classé',
                 url: `${config.server}/${type}/${config.username}/${config.password}/${item.stream_id}.${item.container_extension || 'ts'}`,
                 id: item.stream_id,
             }));
@@ -178,7 +182,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     async function fetchM3uChannels(url) {
         try {
-            const proxyUrl = 'https://corsproxy.io/?'; // On change le proxy ici aussi
+            const proxyUrl = 'https://corsproxy.io/?';
             const response = await fetch(proxyUrl + encodeURIComponent(url));
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const m3uText = await response.text();
@@ -231,10 +235,12 @@ document.addEventListener('DOMContentLoaded', () => {
     function displayItems() {
         const currentItems = state[`${state.currentCategory}_streams`] || [];
         const filterText = searchBar.value.toLowerCase();
-        const filteredItems = currentItems.filter(item => 
-            (state.currentGroup === 'Tout voir' || item.group === state.currentGroup) &&
-            item.name.toLowerCase().includes(filterText)
-        );
+        const filteredItems = currentItems.filter(item => {
+            // CORRECTION N°2 : On vérifie que le nom existe avant de filtrer
+            const itemName = item.name || ''; 
+            return (state.currentGroup === 'Tout voir' || item.group === state.currentGroup) &&
+                   itemName.toLowerCase().includes(filterText);
+        });
         channelList.innerHTML = '';
         if (filteredItems.length === 0 && currentItems.length > 0) {
             channelList.innerHTML = `<div class="channel-item">Aucun résultat pour "${searchBar.value}"</div>`;
@@ -321,17 +327,8 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const savedConfig = localStorage.getItem('iptv_config');
         if (savedConfig) {
-            showView('player-view');
             const config = JSON.parse(savedConfig);
-            if (config.type === 'm3u-local') {
-                loginError.textContent = `Connecté au fichier local: ${config.name}. Pour changer, déconnectez-vous.`;
-            } else {
-                 login(config).catch(error => {
-                    localStorage.removeItem('iptv_config');
-                    showView('login-view');
-                    loginError.textContent = `Erreur de reconnexion: ${error.message}`;
-                });
-            }
+             login(config); // On lance le login, qui va ensuite afficher la vue player
         } else {
             showView('login-view');
         }
