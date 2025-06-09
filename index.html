@@ -8,7 +8,6 @@
     <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
 </head>
 <body>
-
     <div id="login-view" class="view active">
         <div class="login-box">
             <h1>NextGen IPTV Player</h1>
@@ -17,24 +16,20 @@
                 <option value="xtream">API Xtream Codes</option>
                 <option value="m3u">Lien ou Fichier M3U</option>
             </select>
-            
             <div id="xtream-fields">
                 <input type="text" id="serverUrl" placeholder="http://serveur.com:port">
                 <input type="text" id="username" placeholder="Nom d'utilisateur">
                 <input type="password" id="password" placeholder="Mot de passe">
             </div>
-
             <div id="m3u-fields" class="hidden">
                 <input type="url" id="m3uUrl" placeholder="URL de votre fichier M3U">
                 <p style="text-align: center; margin: 10px 0;">OU</p>
                 <input type="file" id="m3uFile" accept=".m3u,.m3u8" style="padding: 5px; border: none;">
             </div>
-
             <button id="connect-btn">Se Connecter</button>
             <p id="login-error" class="error-message"></p>
         </div>
     </div>
-
     <div id="player-view" class="view">
         <aside class="sidebar">
             <div class="content-selector">
@@ -42,26 +37,21 @@
                 <div class="selector-item" data-category="vod">🎬 Films</div>
                 <div class="selector-item" data-category="series">🎞️ Séries</div>
             </div>
-
             <div class="sidebar-header">
                 <h2>Groupes</h2>
             </div>
-            <div id="group-list">
-                </div>
-             <div class="sidebar-footer">
+            <div id="group-list"></div>
+            <div class="sidebar-footer">
                 <button id="settings-btn">⚙️ Paramètres</button>
                 <button id="logout-btn">Déconnexion</button>
             </div>
         </aside>
-        
         <main class="main-content">
             <div class="channel-list-container">
                  <h2 id="list-title">Chaînes</h2>
                  <input type="text" id="search-bar" placeholder="Rechercher...">
-                 <div id="channel-list">
-                    </div>
+                 <div id="channel-list"></div>
             </div>
-           
             <div class="player-container">
                 <video id="player" controls autoplay></video>
                 <div id="epg-info">
@@ -73,7 +63,6 @@
             </div>
         </main>
     </div>
-
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
@@ -89,9 +78,7 @@
             <button id="save-settings-btn">Enregistrer les paramètres</button>
         </div>
     </div>
-
     <div id="debug-log"></div>
-
     <script src="app.js"></script>
 </body>
 </html>
