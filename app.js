@@ -1,38 +1,18 @@
 // --- Débogueur à l'écran ---
 (function () {
     const debugLog = document.getElementById('debug-log');
-    
-    // Si la div de debug n'existe pas, on ne fait rien.
     if (!debugLog) return;
-
-    // On sauvegarde les fonctions originales de la console
-    const originalLog = console.log;
-    const originalError = console.error;
-    const originalWarn = console.warn;
-
-    // Fonction pour ajouter un message à l'écran
+    const originalLog = console.log, originalError = console.error, originalWarn = console.warn;
     function logToScreen(message, color = '#00ff00') {
         const p = document.createElement('p');
         p.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
         p.style.color = color;
         debugLog.appendChild(p);
-        // Fait défiler automatiquement vers le bas
         debugLog.scrollTop = debugLog.scrollHeight;
     }
-
-    // On remplace les fonctions de la console
-    console.log = function() {
-        logToScreen(Array.from(arguments).join(' '));
-        originalLog.apply(console, arguments);
-    };
-    console.error = function() {
-        logToScreen(`ERREUR: ${Array.from(arguments).join(' ')}`, '#ff4d4d');
-        originalError.apply(console, arguments);
-    };
-    console.warn = function() {
-        logToScreen(`AVERTISSEMENT: ${Array.from(arguments).join(' ')}`, '#ffff4d');
-        originalWarn.apply(console, arguments);
-    };
+    console.log = function() { logToScreen(Array.from(arguments).join(' ')); originalLog.apply(console, arguments); };
+    console.error = function() { logToScreen(`ERREUR: ${Array.from(arguments).join(' ')}`, '#ff4d4d'); originalError.apply(console, arguments); };
+    console.warn = function() { logToScreen(`AVERTISSEMENT: ${Array.from(arguments).join(' ')}`, '#ffff4d'); originalWarn.apply(console, arguments); };
 })();
 // --- Fin du débogueur à l'écran ---
 
@@ -40,36 +20,21 @@
 document.addEventListener('DOMContentLoaded', () => {
     // --- ÉTAT DE L'APPLICATION ---
     const state = {
-        config: null,
-        live_streams: [],
-        vod_streams: [],
-        series_streams: [],
-        groups: [],
-        currentCategory: 'live', // live, vod, ou series
-        currentGroup: 'Tout voir',
-        hls: null,
+        config: null, live_streams: [], vod_streams: [], series_streams: [],
+        groups: [], currentCategory: 'live', currentGroup: 'Tout voir', hls: null,
     };
 
     // --- SÉLECTEURS D'ÉLÉMENTS DU DOM ---
-    const loginView = document.getElementById('login-view');
-    const playerView = document.getElementById('player-view');
-    const connTypeEl = document.getElementById('connType');
-    const xtreamFields = document.getElementById('xtream-fields');
-    const m3uFields = document.getElementById('m3u-fields');
-    const connectBtn = document.getElementById('connect-btn');
-    const loginError = document.getElementById('login-error');
-    const contentSelector = document.querySelector('.content-selector');
-    const groupList = document.getElementById('group-list');
-    const listTitle = document.getElementById('list-title');
-    const channelList = document.getElementById('channel-list');
-    const videoPlayer = document.getElementById('player');
-    const logoutBtn = document.getElementById('logout-btn');
-    const searchBar = document.getElementById('search-bar');
-    const settingsBtn = document.getElementById('settings-btn');
-    const settingsModal = document.getElementById('settings-modal');
-    const closeModalBtn = document.querySelector('.close-btn');
-    const saveSettingsBtn = document.getElementById('save-settings-btn');
-    const m3uFileEl = document.getElementById('m3uFile');
+    const loginView = document.getElementById('login-view'), playerView = document.getElementById('player-view'),
+        connTypeEl = document.getElementById('connType'), xtreamFields = document.getElementById('xtream-fields'),
+        m3uFields = document.getElementById('m3u-fields'), connectBtn = document.getElementById('connect-btn'),
+        loginError = document.getElementById('login-error'), contentSelector = document.querySelector('.content-selector'),
+        groupList = document.getElementById('group-list'), listTitle = document.getElementById('list-title'),
+        channelList = document.getElementById('channel-list'), videoPlayer = document.getElementById('player'),
+        logoutBtn = document.getElementById('logout-btn'), searchBar = document.getElementById('search-bar'),
+        settingsBtn = document.getElementById('settings-btn'), settingsModal = document.getElementById('settings-modal'),
+        closeModalBtn = document.querySelector('.close-btn'), saveSettingsBtn = document.getElementById('save-settings-btn'),
+        m3uFileEl = document.getElementById('m3uFile');
 
     // --- GESTION DES VUES ---
     const showView = (viewId) => {
@@ -81,22 +46,18 @@ document.addEventListener('DOMContentLoaded', () => {
     function switchCategory(category) {
         state.currentCategory = category;
         state.currentGroup = 'Tout voir';
-
         document.querySelectorAll('.selector-item').forEach(item => {
             item.classList.toggle('active', item.dataset.category === category);
         });
-        
         const titles = { live: 'Chaînes', vod: 'Films', series: 'Séries' };
         listTitle.textContent = titles[category];
         searchBar.placeholder = `Rechercher dans ${titles[category]}...`;
-
         processItems();
     }
     
     contentSelector.addEventListener('click', (e) => {
         if (e.target.classList.contains('selector-item')) {
-            const category = e.target.dataset.category;
-            switchCategory(category);
+            switchCategory(e.target.dataset.category);
         }
     });
 
@@ -110,26 +71,21 @@ document.addEventListener('DOMContentLoaded', () => {
         loginError.textContent = '';
         const type = connTypeEl.value;
         let config = { type };
-
         if (type === 'xtream') {
             config.server = document.getElementById('serverUrl').value.trim();
             config.username = document.getElementById('username').value.trim();
             config.password = document.getElementById('password').value;
             if (!config.server || !config.username || !config.password) {
-                loginError.textContent = 'Tous les champs Xtream sont requis.';
-                return;
+                loginError.textContent = 'Tous les champs Xtream sont requis.'; return;
             }
         } else {
             config.m3u = document.getElementById('m3uUrl').value.trim();
             if (!config.m3u) {
-                loginError.textContent = 'L\'URL M3U est requise.';
-                return;
+                loginError.textContent = 'L\'URL M3U est requise.'; return;
             }
         }
-
         connectBtn.textContent = 'Connexion en cours...';
         connectBtn.disabled = true;
-
         try {
             await login(config);
             localStorage.setItem('iptv_config', JSON.stringify(state.config));
@@ -146,19 +102,13 @@ document.addEventListener('DOMContentLoaded', () => {
     m3uFileEl.addEventListener('change', (event) => {
         const file = event.target.files[0];
         if (!file) return;
-
         const reader = new FileReader();
         reader.onload = function(e) {
             try {
-                const m3uText = e.target.result;
-                const channels = parseM3U(m3uText);
-                state.live_streams = channels;
-                state.vod_streams = [];
-                state.series_streams = [];
-                
+                state.live_streams = parseM3U(e.target.result);
+                state.vod_streams = []; state.series_streams = [];
                 state.config = { type: 'm3u-local', name: file.name };
                 localStorage.setItem('iptv_config', JSON.stringify(state.config));
-                
                 showView('player-view');
                 switchCategory('live');
             } catch (error) {
@@ -177,39 +127,33 @@ document.addEventListener('DOMContentLoaded', () => {
                 fetchXtreamData(config, 'get_vod_streams'),
                 fetchXtreamData(config, 'get_series'),
             ]);
-            
             state.live_streams = results[0].status === 'fulfilled' ? results[0].value : [];
             state.vod_streams = results[1].status === 'fulfilled' ? results[1].value : [];
             state.series_streams = results[2].status === 'fulfilled' ? results[2].value : [];
-
             if(results[0].status === 'rejected') console.error("Échec du chargement de la TV Live:", results[0].reason.message);
             if(results[1].status === 'rejected') console.error("Échec du chargement des Films:", results[1].reason.message);
             if(results[2].status === 'rejected') console.error("Échec du chargement des Séries:", results[2].reason.message);
             console.log(`Chargement terminé. TV: ${state.live_streams.length}, Films: ${state.vod_streams.length}, Séries: ${state.series_streams.length}`);
-
         } else if (config.type === 'm3u') {
             state.live_streams = await fetchM3uChannels(config.m3u);
-            state.vod_streams = [];
-            state.series_streams = [];
+            state.vod_streams = []; state.series_streams = [];
         }
         switchCategory('live');
     }
     
     async function fetchXtreamData(config, action) {
         const apiUrl = `${config.server}/player_api.php?username=${config.username}&password=${config.password}&action=${action}`;
-        const proxyUrl = 'https://api.allorigins.win/raw?url=';
-        console.log(`Chargement de : ${action}`);
+        // ON CHANGE DE PROXY ICI !
+        const proxyUrl = 'https://corsproxy.io/?';
+        console.log(`Chargement de : ${action} via ${proxyUrl}`);
         const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
-        
         if (!response.ok) {
             throw new Error(`Erreur réseau via proxy pour ${action}: Statut ${response.status}`);
         }
-        
         const textData = await response.text();
         if(!textData || textData.includes('DOCTYPE html')) {
              throw new Error(`La réponse pour ${action} est une page HTML, pas du JSON. Le proxy est peut-être bloqué.`);
         }
-
         try {
             const data = JSON.parse(textData);
             if (!Array.isArray(data)) {
@@ -220,14 +164,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 return [];
             }
             console.log(`${data.length} éléments trouvés pour ${action}.`);
-
             const streamTypeMap = { 'get_live_streams': 'live', 'get_vod_streams': 'movie', 'get_series': 'series'};
             const type = streamTypeMap[action];
-
             return data.map(item => ({
-                name: item.name,
-                logo: item.stream_icon || item.icon || '',
-                group: item.category_name || 'Non classé',
+                name: item.name, logo: item.stream_icon || item.icon || '', group: item.category_name || 'Non classé',
                 url: `${config.server}/${type}/${config.username}/${config.password}/${item.stream_id}.${item.container_extension || 'ts'}`,
                 id: item.stream_id,
             }));
@@ -238,7 +178,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     async function fetchM3uChannels(url) {
         try {
-            const proxyUrl = 'https://api.allorigins.win/raw?url=';
+            const proxyUrl = 'https://corsproxy.io/?'; // On change le proxy ici aussi
             const response = await fetch(proxyUrl + encodeURIComponent(url));
             if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
             const m3uText = await response.text();
@@ -249,8 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function parseM3U(m3uText) {
-        const lines = m3uText.split('\n');
-        const channels = [];
+        const lines = m3uText.split('\n'); const channels = [];
         for (let i = 0; i < lines.length; i++) {
             if (lines[i].startsWith('#EXTINF:')) {
                 const infoMatch = lines[i].match(/#EXTINF:-1(?:.*?tvg-id="([^"]*)")?(?:.*?tvg-name="([^"]*)")?(?:.*?tvg-logo="([^"]*)")?(?:.*?group-title="([^"]*)")?,(.+)/);
@@ -258,11 +197,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     const url = lines[++i]?.trim();
                     if(url){
                         channels.push({
-                            id: infoMatch[1] || '',
-                            name: infoMatch[5] ? infoMatch[5].trim() : (infoMatch[2] || 'Nom inconnu'),
-                            logo: infoMatch[3] || '',
-                            group: infoMatch[4] || 'Non classé',
-                            url: url
+                            id: infoMatch[1] || '', name: infoMatch[5] ? infoMatch[5].trim() : (infoMatch[2] || 'Nom inconnu'),
+                            logo: infoMatch[3] || '', group: infoMatch[4] || 'Non classé', url: url
                         });
                     }
                 }
@@ -271,19 +207,16 @@ document.addEventListener('DOMContentLoaded', () => {
         return channels;
     }
 
-    // --- GESTION DE L'AFFICHAGE ---
     function processItems() {
         const currentItems = state[`${state.currentCategory}_streams`] || [];
         const groups = ['Tout voir', ...new Set(currentItems.map(item => item.group))];
         state.groups = groups.sort((a,b) => a.localeCompare(b));
-        
         groupList.innerHTML = '';
         groups.forEach(group => {
             const groupEl = document.createElement('div');
             groupEl.className = 'group-item';
             groupEl.textContent = group;
             if (group === state.currentGroup) groupEl.classList.add('active');
-            
             groupEl.addEventListener('click', () => {
                 state.currentGroup = group;
                 document.querySelector('.group-item.active')?.classList.remove('active');
@@ -327,10 +260,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     searchBar.addEventListener('input', displayItems);
 
-    // --- LECTEUR VIDÉO ---
     function playChannel(url) {
         if (state.hls) state.hls.destroy();
-        
         if (Hls.isSupported()) {
             const userSettings = JSON.parse(localStorage.getItem('iptv_settings')) || {};
             state.hls = new Hls({ liveSyncDurationCount: 3, liveMaxLatencyDurationCount: 4, ...userSettings });
@@ -343,7 +274,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // --- DÉCONNEXION ET PARAMÈTRES ---
     logoutBtn.addEventListener('click', () => {
         localStorage.removeItem('iptv_config');
         localStorage.removeItem('iptv_settings');
@@ -367,10 +297,8 @@ document.addEventListener('DOMContentLoaded', () => {
         settingsModal.style.display = 'none';
     });
 
-    // --- INITIALISATION DE L'APPLICATION ---
     function init() {
         console.log("Initialisation de l'application...");
-        // Peupler le select du fuseau horaire
         const timezoneSelect = document.getElementById('timezone-config');
         try {
             const userTimezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -383,7 +311,6 @@ document.addEventListener('DOMContentLoaded', () => {
             timezoneSelect.innerHTML = `<option value="UTC">UTC</option>`;
         }
         
-        // Charger les paramètres sauvegardés
         const savedSettings = localStorage.getItem('iptv_settings');
         if (savedSettings) {
             const settings = JSON.parse(savedSettings);
@@ -392,7 +319,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if(settings.timezone) timezoneSelect.value = settings.timezone;
         }
         
-        // Logique de reconnexion automatique
         const savedConfig = localStorage.getItem('iptv_config');
         if (savedConfig) {
             showView('player-view');
