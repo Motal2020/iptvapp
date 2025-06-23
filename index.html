@@ -9,7 +9,6 @@
 </head>
 <body>
 
-    <!-- Écran de chargement -->
     <div id="loading-overlay" class="hidden">
         <div class="loading-box">
             <div class="spinner"></div>
@@ -17,20 +16,16 @@
         </div>
     </div>
 
-    <!-- NOUVEAU : Écran de sélection des playlists -->
     <div id="playlist-selector-view" class="view">
         <div class="selector-container">
             <h1>Mes Playlists</h1>
-            <div id="saved-playlists-list">
-                <!-- Les playlists enregistrées seront affichées ici -->
-            </div>
+            <div id="saved-playlists-list"></div>
             <button id="add-new-playlist-btn" class="big-button">
                 <span class="plus-icon">+</span> Ajouter une nouvelle playlist
             </button>
         </div>
     </div>
 
-    <!-- Écran d'ajout de playlist -->
     <div id="add-playlist-view" class="view">
         <div class="login-box">
             <button id="back-to-selector-btn" class="back-button hidden">&larr; Retour</button>
@@ -40,28 +35,23 @@
                 <button id="show-xtream-form" class="big-button">API Xtream Codes</button>
                 <button id="show-m3u-form" class="big-button">Lien M3U</button>
             </div>
-            
             <div id="playlist-form-container" class="hidden">
                 <hr>
                 <input type="text" id="playlistName" placeholder="Donnez un nom à cette playlist (ex: Mon Salon)">
-                
                 <div id="xtream-fields" class="hidden">
                     <input type="text" id="serverUrl" placeholder="http://serveur.com:port">
                     <input type="text" id="username" placeholder="Nom d'utilisateur">
                     <input type="password" id="password" placeholder="Mot de passe">
                 </div>
-                
                 <div id="m3u-fields" class="hidden">
                     <input type="url" id="m3uUrl" placeholder="URL de votre fichier M3U">
                 </div>
-
                 <button id="save-playlist-btn">Sauvegarder et Charger</button>
                 <p id="form-error" class="error-message"></p>
             </div>
         </div>
     </div>
     
-    <!-- Écran Principal du Lecteur -->
     <div id="player-view" class="view">
         <aside class="sidebar">
             <div class="content-selector">
@@ -96,21 +86,11 @@
         </main>
     </div>
     
-    <!-- Modale pour les paramètres -->
     <div id="settings-modal" class="modal">
         <div class="modal-content">
             <span class="close-btn">&times;</span>
             <h2>Paramètres</h2>
-            <label for="latency-config">Latence du flux (en secondes)</label>
-            <input type="number" id="latency-config" min="0" step="0.5" value="1">
-            <hr>
-            <label for="timezone-config">Fuseau horaire (pour l'EPG)</label>
-            <select id="timezone-config"></select>
-            <hr>
-            <h3>Code Parental</h3>
-            <input type="password" id="parental-code" placeholder="Définir un code PIN (4 chiffres)">
-            <button id="save-settings-btn">Enregistrer les paramètres</button>
-        </div>
+            </div>
     </div>
     
     <script src="app.js"></script>
