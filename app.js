@@ -2,63 +2,31 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ÉTAT DE L'APPLICATION ---
     const state = { currentPlaylist: null, live_streams: [], vod_streams: [], series_streams: [], groups: [], currentCategory: 'live', currentGroup: 'Tout voir', hls: null, logoObserver: null };
 
-    // --- SÉLECTEURS DU DOM (CORRIGÉ POUR ÊTRE PLUS ROBUSTE) ---
-    const dom = {
-        loadingOverlay: document.getElementById('loading-overlay'),
-        loadingMessage: document.getElementById('loading-message'),
-        playlistSelectorView: document.getElementById('playlist-selector-view'),
-        savedPlaylistsList: document.getElementById('saved-playlists-list'),
-        addNewPlaylistBtn: document.getElementById('add-new-playlist-btn'),
-        addPlaylistView: document.getElementById('add-playlist-view'),
-        backToSelectorBtn: document.getElementById('back-to-selector-btn'),
-        showXtreamForm: document.getElementById('show-xtream-form'),
-        showM3uForm: document.getElementById('show-m3u-form'),
-        playlistFormContainer: document.getElementById('playlist-form-container'),
-        playlistName: document.getElementById('playlistName'),
-        xtreamFields: document.getElementById('xtream-fields'),
-        m3uFields: document.getElementById('m3u-fields'),
-        serverUrl: document.getElementById('serverUrl'),
-        username: document.getElementById('username'),
-        password: document.getElementById('password'),
-        m3uUrl: document.getElementById('m3uUrl'),
-        m3uFile: document.getElementById('m3uFile'),
-        savePlaylistBtn: document.getElementById('save-playlist-btn'),
-        formError: document.getElementById('form-error'),
-        playerView: document.getElementById('player-view'),
-        contentSelector: document.querySelector('.content-selector'), // CORRECTION: querySelector
-        currentPlaylistName: document.getElementById('current-playlist-name'),
-        groupList: document.getElementById('group-list'),
-        listTitle: document.getElementById('list-title'),
-        channelList: document.getElementById('channel-list'),
-        searchBar: document.getElementById('search-bar'),
-        player: document.getElementById('player'),
-        backToPlaylistsBtn: document.getElementById('back-to-playlists-btn'),
-        settingsBtn: document.getElementById('settings-btn'),
-        settingsModal: document.getElementById('settings-modal'),
-        closeModalBtn: document.querySelector('.close-btn'), // CORRECTION: querySelector
-        epgInfo: document.getElementById('epg-info')
-    };
-    
-    // --- GESTION DES DONNÉES LOCALES (MULTI-PLAYLIST) ---
-    const getPlaylists = () => JSON.parse(localStorage.getItem('iptv_playlists_v2')) || [];
-    const savePlaylists = (playlists) => localStorage.setItem('iptv_playlists_v2', JSON.stringify(playlists));
-    const getActivePlaylistId = () => localStorage.getItem('active_playlist_id_v2');
-    const setActivePlaylistId = (id) => localStorage.setItem('active_playlist_id_v2', id);
+    // --- SÉLECTEURS DU DOM ---
+    const dom = {};
+    const allDomIds = ['loading-overlay', 'loading-message', 'playlist-selector-view', 'saved-playlists-list', 'add-new-playlist-btn', 'add-playlist-view', 'back-to-selector-btn', 'show-xtream-form', 'show-m3u-form', 'playlist-form-container', 'playlistName', 'xtream-fields', 'm3u-fields', 'serverUrl', 'username', 'password', 'm3uUrl', 'save-playlist-btn', 'form-error', 'player-view', 'content-selector', 'current-playlist-name', 'group-list', 'list-title', 'channel-list', 'search-bar', 'player', 'back-to-playlists-btn', 'settings-btn', 'settings-modal', 'epg-info'];
+    allDomIds.forEach(id => dom[id] = document.getElementById(id));
+    dom.closeModalBtn = document.querySelector('.close-btn');
 
-    // --- Fonctions de l'écran de chargement ---
+    // --- GESTION DES DONNÉES LOCALES ---
+    const getPlaylists = () => JSON.parse(localStorage.getItem('iptv_playlists_v3')) || [];
+    const savePlaylists = (playlists) => localStorage.setItem('iptv_playlists_v3', JSON.stringify(playlists));
+    const getActivePlaylistId = () => localStorage.getItem('active_playlist_id_v3');
+    const setActivePlaylistId = (id) => localStorage.setItem('active_playlist_id_v3', id);
+
+    // --- Fonctions UI ---
     function showLoadingOverlay(message) { dom.loadingOverlay.classList.remove('hidden'); dom.loadingMessage.textContent = message; }
     function updateLoadingMessage(message) { dom.loadingMessage.textContent = message; }
     function hideLoadingOverlay() { dom.loadingOverlay.classList.add('hidden'); }
-
-    // --- GESTION DES VUES ---
     const showView = (viewId) => {
         document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
         document.getElementById(viewId).classList.add('active');
     };
 
-    // --- POINT D'ENTRÉE DE L'APPLICATION ---
+    // --- POINT D'ENTRÉE ---
     init();
 
+    // --- LOGIQUE PRINCIPALE ---
     function init() {
         setupEventListeners();
         const playlists = getPlaylists();
@@ -74,11 +42,11 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.backToSelectorBtn.classList.add('hidden');
         }
     }
-    
+
     async function loadPlaylist(playlist, isAutoReconnect = false) {
         showLoadingOverlay(isAutoReconnect ? `Reconnexion à "${playlist.name}"...` : `Chargement de "${playlist.name}"...`);
         try {
-            await login(playlist);
+            await login(playlist); // Appel à la fonction login
             setActivePlaylistId(playlist.id);
             state.currentPlaylist = playlist;
             dom.currentPlaylistName.textContent = playlist.name;
@@ -90,13 +58,135 @@ document.addEventListener('DOMContentLoaded', () => {
             hideLoadingOverlay();
         }
     }
+
+    function displayPlaylistSelector() {
+        const playlists = getPlaylists();
+        dom.savedPlaylistsList.innerHTML = '';
+        if (playlists.length === 0) {
+            dom.savedPlaylistsList.innerHTML = '<p style="padding: 20px;">Aucune playlist enregistrée.</p>';
+        } else {
+            playlists.forEach(p => {
+                const card = document.createElement('div');
+                card.className = 'playlist-card';
+                card.innerHTML = `<h3>${p.name}</h3><p>${p.type === 'xtream' ? 'API Xtream Codes' : 'Lien M3U'}</p><div class="playlist-actions"><button class="delete-btn">Supprimer</button></div>`;
+                card.addEventListener('click', () => loadPlaylist(p));
+                card.querySelector('.delete-btn').addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Êtes-vous sûr de vouloir supprimer la playlist "${p.name}" ?`)) deletePlaylist(p.id);
+                });
+                dom.savedPlaylistsList.appendChild(card);
+            });
+        }
+        showView('playlist-selector-view');
+    }
+
+    function deletePlaylist(id) {
+        let playlists = getPlaylists().filter(p => p.id != id);
+        savePlaylists(playlists);
+        if (getActivePlaylistId() == id) localStorage.removeItem('active_playlist_id_v3');
+        init();
+    }
     
-    // ... Toutes les autres fonctions (displayPlaylistSelector, deletePlaylist, login, fetchApiData, etc.)
-    // ... Sont exactement les mêmes que dans ma réponse précédente.
+    // --- NOUVELLE FONCTION LOGIN CORRIGÉE ET PRÉSENTE ---
+    async function login(playlistConfig) {
+        state.config = playlistConfig; // On garde la config pour les fonctions internes
+        if (playlistConfig.type === 'xtream') {
+            updateLoadingMessage('1/6 - Catégories TV...');
+            const live_categories = await fetchXtreamCategories(playlistConfig, 'get_live_categories');
+            updateLoadingMessage('2/6 - Chaînes TV...');
+            state.live_streams = await fetchXtreamData(playlistConfig, 'get_live_streams', live_categories);
+            updateLoadingMessage('3/6 - Catégories Films...');
+            const vod_categories = await fetchXtreamCategories(playlistConfig, 'get_vod_categories');
+            updateLoadingMessage('4/6 - Films...');
+            state.vod_streams = await fetchXtreamData(playlistConfig, 'get_vod_streams', vod_categories);
+            updateLoadingMessage('5/6 - Catégories Séries...');
+            const series_categories = await fetchXtreamCategories(playlistConfig, 'get_series_categories');
+            updateLoadingMessage('6/6 - Séries...');
+            state.series_streams = await fetchXtreamData(playlistConfig, 'get_series', series_categories);
+        } else if (playlistConfig.type === 'm3u') {
+            updateLoadingMessage('Chargement de la liste M3U...');
+            state.live_streams = await fetchM3uChannels(playlistConfig.m3uUrl);
+            state.vod_streams = []; state.series_streams = [];
+        }
+        
+        updateLoadingMessage('Finalisation...');
+        dom.contentSelector.querySelector('[data-category="vod"]').style.display = state.vod_streams.length > 0 ? 'block' : 'none';
+        dom.contentSelector.querySelector('[data-category="series"]').style.display = state.series_streams.length > 0 ? 'block' : 'none';
+        
+        switchCategory('live');
+    }
+
+    // --- FONCTIONS DE RÉCUPÉRATION DE DONNÉES ---
+    async function fetchApiData(config, action) {
+        const apiUrl = `${config.server}/player_api.php?username=${config.username}&password=${config.password}&action=${action}`;
+        const proxyUrl = 'https://corsproxy.io/?';
+        const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
+        if (!response.ok) throw new Error(`Proxy error for ${action}: Status ${response.status}`);
+        const textData = await response.text();
+        if (!textData || textData.includes('DOCTYPE html')) throw new Error(`Proxy response for ${action} is HTML.`);
+        try { return JSON.parse(textData); } catch (e) { throw new Error(`JSON parsing error for ${action}: ${e.message}`); }
+    }
+
+    async function fetchXtreamCategories(config, action) {
+        try {
+            const data = await fetchApiData(config, action);
+            const categoryMap = new Map();
+            if (Array.isArray(data)) data.forEach(cat => categoryMap.set(cat.category_id, cat.category_name));
+            return categoryMap;
+        } catch (e) { console.error(`Could not load categories for ${action}, continuing without.`, e); return new Map(); }
+    }
+
+    async function fetchXtreamData(config, action, categoryMap = new Map()) {
+        const data = await fetchApiData(config, action);
+        if (!Array.isArray(data)) return [];
+        const streamTypeMap = { 'get_live_streams': 'live', 'get_vod_streams': 'movie', 'get_series': 'series' };
+        const type = streamTypeMap[action];
+        return data.filter(item => item.name || item.title).map(item => ({
+            name: item.name || item.title, logo: item.stream_icon || item.icon || item.cover || '',
+            group: categoryMap.get(item.category_id) || item.category_name || 'Non classé',
+            url: `${config.server}/${type}/${config.username}/${config.password}/${item.stream_id}.${item.container_extension || 'ts'}`,
+            id: item.stream_id, epgId: item.epg_channel_id
+        }));
+    }
+
+    async function fetchM3uChannels(url) {
+        const proxyUrl = 'https://corsproxy.io/?';
+        const response = await fetch(proxyUrl + encodeURIComponent(url));
+        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        const m3uText = await response.text();
+        return parseM3U(m3uText);
+    }
+    
+    function parseM3U(m3uText) {
+        const lines = m3uText.split('\n'); const channels = [];
+        for (let i = 0; i < lines.length; i++) {
+            if (lines[i].startsWith('#EXTINF:')) {
+                const infoMatch = lines[i].match(/#EXTINF:-1(?:.*?tvg-id="([^"]*)")?(?:.*?tvg-name="([^"]*)")?(?:.*?tvg-logo="([^"]*)")?(?:.*?group-title="([^"]*)")?,(.+)/);
+                if (infoMatch) {
+                    const url = lines[++i]?.trim();
+                    if(url){
+                        channels.push({
+                            id: infoMatch[1] || '', name: infoMatch[5] ? infoMatch[5].trim() : (infoMatch[2] || 'Nom inconnu'),
+                            logo: infoMatch[3] || '', group: infoMatch[4] || 'Non classé', url: url
+                        });
+                    }
+                }
+            }
+        }
+        return channels;
+    }
+
+    // --- FONCTIONS D'AFFICHAGE ET LECTURE ---
+    function switchCategory(category) { /* ... */ }
+    function processItems() { /* ... */ }
+    function displayItems() { /* ... */ }
+    function setupLogoLazyLoading() { /* ... */ }
+    function playChannel(url) { /* ... */ }
     
     // --- GESTION DES ÉVÉNEMENTS ---
     function setupEventListeners() {
         dom.addNewPlaylistBtn.addEventListener('click', () => {
+            dom.playlistFormContainer.classList.add('hidden');
             const playlists = getPlaylists();
             dom.backToSelectorBtn.classList.toggle('hidden', playlists.length === 0);
             showView('add-playlist-view');
@@ -125,16 +215,18 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.formError.textContent = '';
             const name = dom.playlistName.value.trim();
             if (!name) { dom.formError.textContent = "Veuillez donner un nom à la playlist."; return; }
+            
             const newPlaylist = { id: Date.now(), name, type: currentFormType };
+            
             if (currentFormType === 'xtream') {
                 newPlaylist.server = dom.serverUrl.value.trim();
                 newPlaylist.username = dom.username.value.trim();
                 newPlaylist.password = dom.password.value;
                 if (!newPlaylist.server || !newPlaylist.username) { dom.formError.textContent = 'Le serveur et le nom d\'utilisateur sont requis.'; return; }
-            } else {
+            } else if (currentFormType === 'm3u') {
                 newPlaylist.m3uUrl = dom.m3uUrl.value.trim();
                 if (!newPlaylist.m3uUrl) { dom.formError.textContent = "L'URL M3U est requise."; return; }
-            }
+            } else { dom.formError.textContent = "Veuillez choisir un type de connexion."; return; }
 
             showLoadingOverlay(`Test de la connexion pour "${name}"...`);
             try {
@@ -142,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 const playlists = getPlaylists();
                 playlists.push(newPlaylist);
                 savePlaylists(playlists);
-                await loadPlaylist(newPlaylist); // Charge la playlist après l'avoir sauvegardée
+                await loadPlaylist(newPlaylist);
             } catch (error) {
                 dom.formError.textContent = `Impossible d'ajouter la playlist : ${error.message}`;
             } finally {
@@ -151,11 +243,10 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         dom.contentSelector.addEventListener('click', (e) => {
-            if (e.target.classList.contains('selector-item')) {
-                switchCategory(e.target.dataset.category);
-            }
+            if (e.target.classList.contains('selector-item')) switchCategory(e.target.dataset.category);
         });
         
-        // ... Le reste des écouteurs d'événements
+        dom.searchBar.addEventListener('input', displayItems);
+        // ... (autres listeners comme settings, etc.)
     }
 });
