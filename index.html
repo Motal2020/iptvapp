@@ -12,30 +12,50 @@
     <div id="loading-overlay" class="hidden">
         <div class="loading-box">
             <div class="spinner"></div>
-            <p id="loading-message">Connexion en cours...</p>
+            <p id="loading-message">Chargement...</p>
         </div>
     </div>
 
-    <div id="login-view" class="view active">
+    <div id="playlist-selector-view" class="view">
+        <div class="selector-container">
+            <h1>Mes Playlists</h1>
+            <div id="saved-playlists-list">
+                </div>
+            <button id="add-new-playlist-btn" class="big-button">
+                <span class="plus-icon">+</span> Ajouter une nouvelle playlist
+            </button>
+        </div>
+    </div>
+
+    <div id="add-playlist-view" class="view">
         <div class="login-box">
-            <h1>NextGen IPTV Player</h1>
-            <p>Connectez-vous à votre service</p>
-            <select id="connType">
-                <option value="xtream">API Xtream Codes</option>
-                <option value="m3u">Lien ou Fichier M3U</option>
-            </select>
-            <div id="xtream-fields">
-                <input type="text" id="serverUrl" placeholder="http://serveur.com:port">
-                <input type="text" id="username" placeholder="Nom d'utilisateur">
-                <input type="password" id="password" placeholder="Mot de passe">
+            <button id="back-to-selector-btn" class="back-button hidden">&larr; Retour</button>
+            <h1>Ajouter une Playlist</h1>
+            <p>Choisissez votre méthode de connexion</p>
+            <div class="connection-choice">
+                <button id="show-xtream-form" class="big-button">API Xtream Codes</button>
+                <button id="show-m3u-form" class="big-button">Lien ou Fichier M3U</button>
             </div>
-            <div id="m3u-fields" class="hidden">
-                <input type="url" id="m3uUrl" placeholder="URL de votre fichier M3U">
-                <p style="text-align: center; margin: 10px 0;">OU</p>
-                <input type="file" id="m3uFile" accept=".m3u,.m3u8" style="padding: 5px; border: none;">
+            
+            <div id="playlist-form-container" class="hidden">
+                <hr>
+                <input type="text" id="playlistName" placeholder="Donnez un nom à cette playlist (ex: Mon Salon)">
+                
+                <div id="xtream-fields" class="hidden">
+                    <input type="text" id="serverUrl" placeholder="http://serveur.com:port">
+                    <input type="text" id="username" placeholder="Nom d'utilisateur">
+                    <input type="password" id="password" placeholder="Mot de passe">
+                </div>
+                
+                <div id="m3u-fields" class="hidden">
+                    <input type="url" id="m3uUrl" placeholder="URL de votre fichier M3U">
+                    <p style="text-align: center; margin: 10px 0;">OU</p>
+                    <input type="file" id="m3uFile" accept=".m3u,.m3u8" style="padding: 5px; border: none;">
+                </div>
+
+                <button id="save-playlist-btn">Sauvegarder et Charger</button>
+                <p id="login-error" class="error-message"></p>
             </div>
-            <button id="connect-btn">Se Connecter</button>
-            <p id="login-error" class="error-message"></p>
         </div>
     </div>
     
@@ -47,12 +67,12 @@
                 <div class="selector-item" data-category="series">🎞️ Séries</div>
             </div>
             <div class="sidebar-header">
-                <h2>Groupes</h2>
+                <h2 id="current-playlist-name"></h2>
             </div>
             <div id="group-list"></div>
             <div class="sidebar-footer">
+                <button id="back-to-playlists-btn">🔄 Changer de Playlist</button>
                 <button id="settings-btn">⚙️ Paramètres</button>
-                <button id="logout-btn">Déconnexion</button>
             </div>
         </aside>
         <main class="main-content">
@@ -74,20 +94,7 @@
     </div>
     
     <div id="settings-modal" class="modal">
-        <div class="modal-content">
-            <span class="close-btn">&times;</span>
-            <h2>Paramètres</h2>
-            <label for="latency-config">Latence du flux (en secondes)</label>
-            <input type="number" id="latency-config" min="0" step="0.5" value="1">
-            <hr>
-            <label for="timezone-config">Fuseau horaire (pour l'EPG)</label>
-            <select id="timezone-config"></select>
-            <hr>
-            <h3>Code Parental</h3>
-            <input type="password" id="parental-code" placeholder="Définir un code PIN (4 chiffres)">
-            <button id="save-settings-btn">Enregistrer les paramètres</button>
         </div>
-    </div>
     
     <script src="app.js"></script>
 </body>
