@@ -2,12 +2,26 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- ÉTAT DE L'APPLICATION ---
     const state = { currentPlaylist: null, live_streams: [], vod_streams: [], series_streams: [], groups: [], currentCategory: 'live', currentGroup: 'Tout voir', hls: null, logoObserver: null };
 
-    // --- SÉLECTEURS DU DOM ---
-    const dom = {};
-    const allDomIds = ['loading-overlay', 'loading-message', 'playlist-selector-view', 'saved-playlists-list', 'add-new-playlist-btn', 'add-playlist-view', 'back-to-selector-btn', 'show-xtream-form', 'show-m3u-form', 'playlist-form-container', 'playlistName', 'xtream-fields', 'm3u-fields', 'serverUrl', 'username', 'password', 'm3uUrl', 'save-playlist-btn', 'form-error', 'player-view', 'content-selector', 'current-playlist-name', 'group-list', 'list-title', 'channel-list', 'search-bar', 'player', 'back-to-playlists-btn', 'settings-btn', 'settings-modal', 'epg-info'];
-    allDomIds.forEach(id => dom[id] = document.getElementById(id));
-    dom.closeModalBtn = document.querySelector('.close-btn');
-
+    // --- SÉLECTEURS DU DOM (Robustes) ---
+    const dom = {
+        loadingOverlay: document.getElementById('loading-overlay'), loadingMessage: document.getElementById('loading-message'),
+        playlistSelectorView: document.getElementById('playlist-selector-view'), savedPlaylistsList: document.getElementById('saved-playlists-list'),
+        addNewPlaylistBtn: document.getElementById('add-new-playlist-btn'), addPlaylistView: document.getElementById('add-playlist-view'),
+        backToSelectorBtn: document.getElementById('back-to-selector-btn'), showXtreamForm: document.getElementById('show-xtream-form'),
+        showM3uForm: document.getElementById('show-m3u-form'), playlistFormContainer: document.getElementById('playlist-form-container'),
+        playlistName: document.getElementById('playlistName'), xtreamFields: document.getElementById('xtream-fields'),
+        m3uFields: document.getElementById('m3u-fields'), serverUrl: document.getElementById('serverUrl'),
+        username: document.getElementById('username'), password: document.getElementById('password'),
+        m3uUrl: document.getElementById('m3uUrl'), savePlaylistBtn: document.getElementById('save-playlist-btn'),
+        formError: document.getElementById('form-error'), playerView: document.getElementById('player-view'),
+        contentSelector: document.querySelector('.content-selector'), currentPlaylistName: document.getElementById('current-playlist-name'),
+        groupList: document.getElementById('group-list'), listTitle: document.getElementById('list-title'),
+        channelList: document.getElementById('channel-list'), searchBar: document.getElementById('search-bar'),
+        player: document.getElementById('player'), backToPlaylistsBtn: document.getElementById('back-to-playlists-btn'),
+        settingsBtn: document.getElementById('settings-btn'), settingsModal: document.getElementById('settings-modal'),
+        closeModalBtn: document.querySelector('.close-btn'), epgInfo: document.getElementById('epg-info')
+    };
+    
     // --- GESTION DES DONNÉES LOCALES ---
     const getPlaylists = () => JSON.parse(localStorage.getItem('iptv_playlists_v3')) || [];
     const savePlaylists = (playlists) => localStorage.setItem('iptv_playlists_v3', JSON.stringify(playlists));
@@ -46,7 +60,7 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadPlaylist(playlist, isAutoReconnect = false) {
         showLoadingOverlay(isAutoReconnect ? `Reconnexion à "${playlist.name}"...` : `Chargement de "${playlist.name}"...`);
         try {
-            await login(playlist); // Appel à la fonction login
+            await login(playlist);
             setActivePlaylistId(playlist.id);
             state.currentPlaylist = playlist;
             dom.currentPlaylistName.textContent = playlist.name;
@@ -87,9 +101,9 @@ document.addEventListener('DOMContentLoaded', () => {
         init();
     }
     
-    // --- NOUVELLE FONCTION LOGIN CORRIGÉE ET PRÉSENTE ---
+    // --- FONCTION LOGIN QUI ÉTAIT MANQUANTE ---
     async function login(playlistConfig) {
-        state.config = playlistConfig; // On garde la config pour les fonctions internes
+        state.config = playlistConfig; 
         if (playlistConfig.type === 'xtream') {
             updateLoadingMessage('1/6 - Catégories TV...');
             const live_categories = await fetchXtreamCategories(playlistConfig, 'get_live_categories');
@@ -121,10 +135,10 @@ document.addEventListener('DOMContentLoaded', () => {
         const apiUrl = `${config.server}/player_api.php?username=${config.username}&password=${config.password}&action=${action}`;
         const proxyUrl = 'https://corsproxy.io/?';
         const response = await fetch(proxyUrl + encodeURIComponent(apiUrl));
-        if (!response.ok) throw new Error(`Proxy error for ${action}: Status ${response.status}`);
+        if (!response.ok) throw new Error(`Erreur du proxy pour ${action}: Statut ${response.status}`);
         const textData = await response.text();
-        if (!textData || textData.includes('DOCTYPE html')) throw new Error(`Proxy response for ${action} is HTML.`);
-        try { return JSON.parse(textData); } catch (e) { throw new Error(`JSON parsing error for ${action}: ${e.message}`); }
+        if (!textData || textData.includes('DOCTYPE html')) throw new Error(`La réponse du proxy pour ${action} est du HTML.`);
+        try { return JSON.parse(textData); } catch (e) { throw new Error(`Erreur de parsing JSON pour ${action}: ${e.message}`); }
     }
 
     async function fetchXtreamCategories(config, action) {
@@ -133,7 +147,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const categoryMap = new Map();
             if (Array.isArray(data)) data.forEach(cat => categoryMap.set(cat.category_id, cat.category_name));
             return categoryMap;
-        } catch (e) { console.error(`Could not load categories for ${action}, continuing without.`, e); return new Map(); }
+        } catch (e) { console.error(`Impossible de charger les catégories pour ${action}, on continue.`, e); return new Map(); }
     }
 
     async function fetchXtreamData(config, action, categoryMap = new Map()) {
@@ -148,11 +162,11 @@ document.addEventListener('DOMContentLoaded', () => {
             id: item.stream_id, epgId: item.epg_channel_id
         }));
     }
-
+    
     async function fetchM3uChannels(url) {
         const proxyUrl = 'https://corsproxy.io/?';
         const response = await fetch(proxyUrl + encodeURIComponent(url));
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+        if (!response.ok) throw new Error(`Erreur HTTP! Statut: ${response.status}`);
         const m3uText = await response.text();
         return parseM3U(m3uText);
     }
@@ -177,11 +191,103 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- FONCTIONS D'AFFICHAGE ET LECTURE ---
-    function switchCategory(category) { /* ... */ }
-    function processItems() { /* ... */ }
-    function displayItems() { /* ... */ }
-    function setupLogoLazyLoading() { /* ... */ }
-    function playChannel(url) { /* ... */ }
+    function switchCategory(category) {
+        state.currentCategory = category; state.currentGroup = 'Tout voir';
+        dom.contentSelector.querySelectorAll('.selector-item').forEach(item => item.classList.toggle('active', item.dataset.category === category));
+        const titles = { live: 'Chaînes', vod: 'Films', series: 'Séries' };
+        dom.listTitle.textContent = titles[category];
+        dom.searchBar.placeholder = `Rechercher dans ${titles[category]}...`;
+        processItems();
+    }
+    
+    function processItems() {
+        if (state.logoObserver) state.logoObserver.disconnect();
+        const currentItems = state[`${state.currentCategory}_streams`] || [];
+        const groups = ['Tout voir', ...new Set(currentItems.map(item => item.group))];
+        state.groups = groups.sort((a,b) => a.localeCompare(b));
+        dom.groupList.innerHTML = '';
+        groups.forEach(group => {
+            const groupEl = document.createElement('div');
+            groupEl.className = 'group-item';
+            groupEl.textContent = group;
+            if (group === state.currentGroup) groupEl.classList.add('active');
+            groupEl.addEventListener('click', () => {
+                dom.groupList.querySelector('.group-item.active')?.classList.remove('active');
+                groupEl.classList.add('active');
+                state.currentGroup = group;
+                displayItems();
+            });
+            dom.groupList.appendChild(groupEl);
+        });
+        displayItems();
+    }
+    
+    function displayItems() {
+        if (state.logoObserver) state.logoObserver.disconnect();
+        const currentItems = state[`${state.currentCategory}_streams`] || [];
+        const filterText = dom.searchBar.value.toLowerCase();
+        const filteredItems = currentItems.filter(item => (state.currentGroup === 'Tout voir' || item.group === state.currentGroup) && (item.name || '').toLowerCase().includes(filterText));
+        dom.channelList.innerHTML = '';
+        if (filteredItems.length === 0) {
+            dom.channelList.innerHTML = `<div class="channel-item">Aucun contenu trouvé.</div>`;
+        } else {
+            filteredItems.forEach(item => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'channel-item';
+                itemEl.innerHTML = `<img data-src="${item.logo}" alt="" class="channel-logo" src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="><span class="channel-name">${item.name}</span>`;
+                itemEl.addEventListener('click', () => {
+                    dom.channelList.querySelector('.channel-item.active')?.classList.remove('active');
+                    itemEl.classList.add('active');
+                    playChannel(item.url);
+                });
+                dom.channelList.appendChild(itemEl);
+            });
+            setupLogoLazyLoading();
+        }
+    }
+
+    function setupLogoLazyLoading() {
+        state.logoObserver = new IntersectionObserver((entries, observer) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    const img = entry.target;
+                    const src = img.getAttribute('data-src');
+                    if (src) {
+                        img.src = src;
+                        img.onerror = () => { img.style.visibility = 'hidden'; };
+                    }
+                    observer.unobserve(img);
+                }
+            });
+        }, { rootMargin: "100px" });
+        dom.channelList.querySelectorAll('.channel-logo[data-src]').forEach(img => state.logoObserver.observe(img));
+    }
+
+    function playChannel(url) {
+        if (!url) { console.error("URL invalide."); return; }
+        if (state.hls) state.hls.destroy();
+        if (Hls.isSupported()) {
+            const hls = new Hls({ manifestLoadtimeout: 10000 });
+            hls.loadSource(url);
+            hls.attachMedia(dom.player);
+            hls.on(Hls.Events.MANIFEST_PARSED, () => dom.player.play());
+            hls.on(Hls.Events.ERROR, function (event, data) {
+                if (data.fatal) {
+                    console.error('Erreur HLS fatale:', data);
+                    switch (data.type) {
+                        case Hls.ErrorTypes.NETWORK_ERROR:
+                            alert("Erreur de lecture : Impossible de charger le flux.\nProbablement une restriction CORS du fournisseur.\nL'application ne gèlera pas.");
+                            hls.destroy(); break;
+                        default: hls.destroy(); break;
+                    }
+                }
+            });
+            state.hls = hls;
+        } else if (dom.player.canPlayType('application/vnd.apple.mpegurl')) {
+            dom.player.src = url;
+            dom.player.play();
+        }
+    }
     
     // --- GESTION DES ÉVÉNEMENTS ---
     function setupEventListeners() {
@@ -196,7 +302,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (state.hls) state.hls.destroy();
             displayPlaylistSelector();
         });
-        
         let currentFormType = null;
         dom.showXtreamForm.addEventListener('click', () => {
             currentFormType = 'xtream';
@@ -210,14 +315,11 @@ document.addEventListener('DOMContentLoaded', () => {
             dom.xtreamFields.classList.add('hidden');
             dom.m3uFields.classList.remove('hidden');
         });
-
         dom.savePlaylistBtn.addEventListener('click', async () => {
             dom.formError.textContent = '';
             const name = dom.playlistName.value.trim();
             if (!name) { dom.formError.textContent = "Veuillez donner un nom à la playlist."; return; }
-            
             const newPlaylist = { id: Date.now(), name, type: currentFormType };
-            
             if (currentFormType === 'xtream') {
                 newPlaylist.server = dom.serverUrl.value.trim();
                 newPlaylist.username = dom.username.value.trim();
@@ -227,10 +329,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 newPlaylist.m3uUrl = dom.m3uUrl.value.trim();
                 if (!newPlaylist.m3uUrl) { dom.formError.textContent = "L'URL M3U est requise."; return; }
             } else { dom.formError.textContent = "Veuillez choisir un type de connexion."; return; }
-
             showLoadingOverlay(`Test de la connexion pour "${name}"...`);
             try {
-                await login(newPlaylist); // Teste la connexion
+                await login(newPlaylist);
                 const playlists = getPlaylists();
                 playlists.push(newPlaylist);
                 savePlaylists(playlists);
@@ -241,12 +342,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 hideLoadingOverlay();
             }
         });
-
         dom.contentSelector.addEventListener('click', (e) => {
             if (e.target.classList.contains('selector-item')) switchCategory(e.target.dataset.category);
         });
-        
         dom.searchBar.addEventListener('input', displayItems);
-        // ... (autres listeners comme settings, etc.)
     }
 });
